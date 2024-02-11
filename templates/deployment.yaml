@@ -1,0 +1,107 @@
+{{- $dbUser := (lookup "v1" "Secret" .Release.Namespace .Values.env.databaseUser.secretKeyRef.name) }}
+{{- $dbPass := (lookup "v1" "Secret" .Release.Namespace .Values.env.databasePassword.secretKeyRef.name)  }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "miniflux.fullname" . }}
+  labels:
+    {{- include "miniflux.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "miniflux.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "miniflux.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "miniflux.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: BASE_URL
+              value: {{ .Values.env.BASE_URL | quote }}
+            - name: DATABASE_URL
+              value: {{ printf "postgresql://%s:%s@%s"
+                (get (get $dbUser "data") .Values.env.databaseUser.secretKeyRef.key | b64dec)
+                (get (get $dbPass "data") .Values.env.databasePassword.secretKeyRef.key | b64dec)
+                .Values.env.DATABASE_URL }}
+            - name: RUN_MIGRATIONS
+              value: {{ .Values.env.RUN_MIGRATIONS | quote }}
+            - name: TZ
+              value: {{ .Values.env.TZ | quote }}
+            {{- if .Values.env.CREATE_ADMIN  }}
+            - name: CREATE_ADMIN
+              value: {{ .Values.env.CREATE_ADMIN | quote }}
+            - name: ADMIN_USERNAME
+              value: "admin"
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-admin" (include "miniflux.fullname" .) }}
+                  key: "password"
+              {{- end }}
+          ports:
+          - name: http
+            containerPort: {{ .Values.service.port }}
+            protocol: TCP
+          livenessProbe:
+            httpGet:
+            {{- if .Values.env.BASE_URL }}
+              {{- $contextEnvPath := get .Values.env "BASE_URL" | urlParse }}
+              path: {{ $contextEnvPath.path }}/healthcheck
+            {{- else }}
+              path: /healthcheck
+            {{- end }}
+              port: {{ .Values.service.port }}
+          readinessProbe:
+            httpGet:
+            {{- if .Values.env.BASE_URL }}
+              {{- $contextEnvPath := get .Values.env "BASE_URL" | urlParse }}
+              path: {{ $contextEnvPath.path }}/healthcheck
+            {{- else }}
+              path: /healthcheck
+            {{- end }}
+              port: {{ .Values.service.port }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

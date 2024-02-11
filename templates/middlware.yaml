@@ -1,0 +1,22 @@
+{{- if and .Values.ingress.enabled (.Capabilities.APIVersions.Has "traefik.io/v1alpha1") -}}
+{{- $fullName := include "miniflux.fullname" . -}}
+{{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
+  {{- end -}}
+{{- end -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ printf "%s-stripprefix" $fullName }}
+  labels:
+    {{- include "miniflux.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  stripPrefix:
+    prefixes:
+      - /miniflux
+{{- end -}}

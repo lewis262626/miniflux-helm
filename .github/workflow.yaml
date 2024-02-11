@@ -1,0 +1,34 @@
+env:
+  HELM_VERSION: v3.13.3
+
+name: CD
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+jobs:
+  build:
+    name: publish gcr
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        name: checkout repo
+      
+      - name: install helm
+        uses: Azure/setup-helm@v3
+        with:
+          # Version of helm
+          version: ${{ env.HELM_VERSION }}
+        id: install
+      - name: Chart | Push
+        uses: appany/helm-oci-chart-releaser@v0.3.0
+        with:
+          name: miniflux 
+          repository: {{ github.repository_owner }}
+          tag: 0.1.0
+          path: . # Default charts/{name}
+          registry: ghcr.io
+          registry_username: ${{ secrets.REGISTRY_USERNAME }}
+          registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+          update_dependencies: 'true' # Defaults to false
+
