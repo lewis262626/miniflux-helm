@@ -1,5 +1,5 @@
 env:
-  HELM_VERSION: v3.13.3
+  REGISTRY: ghcr.io
 
 name: CD
 on:
@@ -25,7 +25,6 @@ jobs:
           repository: ${{ github.repository }}
           tag: ${{ env.RELEASE_VERSION }}
           path: .
-          registry: ghcr.io
           registry: ${{ env.REGISTRY }}
           registry_username: ${{ github.actor }}
           registry_password: ${{ secrets.GITHUB_TOKEN }}
