@@ -24,7 +24,7 @@ jobs:
         uses: appany/helm-oci-chart-releaser@v0.3.0
         with:
           name: miniflux 
-          repository: {{ github.repository_owner }}
+          repository: ${{ github.repository_owner }}
           tag: 0.1.0
           path: . # Default charts/{name}
           registry: ghcr.io
