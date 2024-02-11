@@ -14,14 +14,14 @@ env:
       name: miniflux-postgres
       key: password
 
-  BASE_URL: http://trafeik.local/miniflux
+  BASE_URL: minifluxexample.com
 
   DATABASE_URL: "my-release-postgresql.postgres.svc.cluster.local/miniflux?sslmode=disable"
   # BASE_URL: "http://trafeik.local/miniflux"
   RUN_MIGRATIONS: '1'
   # -- Set to `1` to create an admin user from environment variables.
   CREATE_ADMIN: '1'
-  TZ: "Europe/London"
+  TZ: "UTC"
 
 replicaCount: 1
 
@@ -56,7 +56,7 @@ securityContext:
   capabilities:
     drop:
     - ALL
-  # readOnlyRootFilesystem: true
+  readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
 
@@ -68,9 +68,8 @@ ingress:
   enabled: true
   className: ""
   annotations:
-    kubernetes.io/ingress.class: "traefik"
   hosts:
-    - host: trafeik.local
+    - host: example.com 
       paths:
         - path: /miniflux
           pathType: ImplementationSpecific

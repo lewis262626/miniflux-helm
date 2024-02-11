@@ -10,23 +10,22 @@ jobs:
   build:
     name: publish gcr
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
         name: checkout repo
-      
-      - name: install helm
-        uses: Azure/setup-helm@v3
+      - name: Set env
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - name: Push | OCI
+        uses: appany/helm-oci-chart-releaser@v0.3.0
         with:
-          # Version of helm
-          version: ${{ env.HELM_VERSION }}
-        id: install
-      - name: Push Helm chart to OCI compatible registry (Github)
-        uses: bsord/helm-push@4.1.0
-        with:
-          useOCIRegistry: true
-          registry-url:  oci://ghcr.io/${{ github.repository }}
-          username: lewis262626
-          access-token: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
-          force: true
-          chart-folder: .
-
+          name: miniflux
+          repository: ${{ github.repository }}
+          tag: ${{ env.RELEASE_VERSION }}
+          path: .
+          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
