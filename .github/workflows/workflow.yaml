@@ -20,15 +20,13 @@ jobs:
           # Version of helm
           version: ${{ env.HELM_VERSION }}
         id: install
-      - name: Chart | Push
-        uses: appany/helm-oci-chart-releaser@v0.3.0
+      - name: Push Helm chart to OCI compatible registry (Github)
+        uses: bsord/helm-push@4.2.0
         with:
-          name: miniflux 
-          repository: ${{ github.repository_owner }}
-          tag: 0.1.0
-          path: . # Default charts/{name}
-          registry: ghcr.io
-          registry_username: ${{ secrets.REGISTRY_USERNAME }}
-          registry_password: ${{ secrets.REGISTRY_PASSWORD }}
-          update_dependencies: 'true' # Defaults to false
+          useOCIRegistry: true
+          registry-url:  oci://ghcr.io/${{ github.repository }}
+          username: lewis262626
+          access-token: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
+          force: true
+          chart-folder: .
 
